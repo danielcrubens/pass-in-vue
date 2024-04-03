@@ -4,9 +4,8 @@
       <h1 class="text-2xl font-bold">Participantes</h1>
       <div class="px-3 w-72 py-1.5 border border-white  rounded-lg flex items-center gap-3">
         <Search class="size-4 text-emerald-300" />
-        <input @input="onSearchInputChanged"
-          class="bg-transparent flex-1 outline-none border-0 p-0 text-sm"
-          placeholder="Buscar participante..."/>
+        <input @input="onSearchInputChanged" class="bg-transparent flex-1 outline-none border-0 p-0 text-sm"
+          placeholder="Buscar participante..." />
       </div>
       {{ search }}
     </div>
@@ -21,11 +20,11 @@
           <TableHeader>Participante</TableHeader>
           <TableHeader>Data de inscrição</TableHeader>
           <TableHeader>Data do check-in</TableHeader>
-          <TableHeader :style="{width: '64px'}"></TableHeader>
+          <TableHeader :style="{ width: '64px' }"></TableHeader>
         </tr>
       </thead>
       <tbody>
-        <TableRow v-for="attendee in paginatedAttendees" :key="attendee.id">
+        <TableRow v-for="attendee in attendees" :key="attendee.id">
           <TableCell>
             <input class='size-4 border border-white/10 rounded accent-orange-400' type="checkbox" />
           </TableCell>
@@ -37,7 +36,11 @@
             </div>
           </TableCell>
           <TableCell>{{ dayjs().to(attendee.createdAt) }}</TableCell>
-          <TableCell>{{ dayjs().to(attendee.checkedInAt) }}</TableCell>
+          <TableCell>
+            <span v-if="attendee.checkedInAt === null" class="text-zinc-400">Não fez check-in</span>
+            <span v-else>{{ dayjs().to(attendee.checkedInAt) }}</span>
+          </TableCell>
+
           <TableCell>
             <IconButton transparent class="bg-black/20 border border-white/10 rounded-md p-1.5">
               <MoreHorizontal class="size-4" />
@@ -78,9 +81,16 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
+interface Attendee {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  checkedInAt: string;
+}
+import { onMounted, watch } from 'vue';
 import { ref } from 'vue';
-import { attendees } from '../data/attendees';
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -95,10 +105,14 @@ import IconButton from './IconButton.vue';
 
 dayjs.extend(relativeTime);
 dayjs.locale("pt-br");
+
+
 const search = ref("");
 const page = ref(1);
 const pageSize = 10;
+const attendees = ref<Attendee[]>([]);
 const paginatedAttendees = ref([]);
+const totalPages = ref(0);
 
 const onSearchInputChanged = (event) => {
   search.value = event.target.value;
@@ -106,39 +120,52 @@ const onSearchInputChanged = (event) => {
 
 const updatePaginatedAttendees = () => {
   const startIndex = (page.value - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, attendees.length);
-  paginatedAttendees.value = attendees.slice(startIndex, endIndex);
+  const endIndex = Math.min(startIndex + pageSize, attendees.value.length);
+  paginatedAttendees.value = attendees.value.slice(startIndex, endIndex);
 };
 
 const goToFirstPage = () => {
   if (page.value !== 1) {
     page.value = 1;
-    updatePaginatedAttendees();
   }
 };
 
 const goToLastPage = () => {
   if (page.value !== totalPages.value) {
     page.value = totalPages.value;
-    updatePaginatedAttendees();
   }
 };
 
 const goToPreviousPage = () => {
   if (page.value > 1) {
     page.value -= 1;
-    updatePaginatedAttendees();
   }
 };
 
 const goToNextPage = () => {
   if (page.value < totalPages.value) {
     page.value += 1;
-    updatePaginatedAttendees();
   }
 };
 
-const totalPages = ref(Math.ceil(attendees.length / pageSize));
-updatePaginatedAttendees();
+const fetchData = async () => {
+  try {
+    const response = await fetch('http://localhost:3333/events/9e9bd979-9d10-4915-b339-3786b1634f33/attendees');
+    const data: { attendees: Attendee[] } = await response.json();
+    attendees.value = data.attendees;
+    totalPages.value = Math.ceil(attendees.value.length / pageSize);
+    updatePaginatedAttendees();
+  } catch (error) {
+    console.error('Erro ao buscar dados:', error);
+  }
+};
+
+watch(page, () => {
+  updatePaginatedAttendees();
+});
+
+onMounted(() => {
+  fetchData();
+});
 
 </script>
