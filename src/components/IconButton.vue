@@ -13,6 +13,6 @@ const props = defineProps({
 
 const buttonClass = {
   'bg-black/20 border border-white/10 rounded-md p-1.5': props.transparent,
-  'bg-white/10 border border-white/10 rounded-md p-1.5': !props.transparent
+  'bg-white/80 border border-white/10 rounded-md p-1.5': !props.transparent
 };
 </script>
