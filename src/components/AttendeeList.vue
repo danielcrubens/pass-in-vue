@@ -2,7 +2,7 @@
   <div class="flex flex-col gap-4">
     <div class="flex gap-3 items-center">
       <h1 class="text-2xl font-bold">Participantes</h1>
-      <div class="px-3 w-72 py-1.5 border border-white  rounded-lg flex items-center gap-3">
+      <div class="px-3 w-72 py-1.5 border border-white/10  rounded-lg flex items-center gap-3">
         <Search class="size-4 text-emerald-300" />
         <input v-model="search" @input="onSearchInputChanged" class="bg-transparent flex-1 outline-none border-0 p-0 text-sm"
           placeholder="Buscar participante..." />
@@ -11,7 +11,7 @@
 
     <Table>
       <thead>
-        <tr class="border-b border-white/70">
+        <tr class="border-b border-white/10">
           <TableHeader :style="{ width: '48px' }">
             <input class="size-4 bg-black/20 rounded border border-white/10 accent-orange-400" type="checkbox" />
           </TableHeader>
@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, onMounted  } from 'vue';
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -146,4 +146,16 @@ fetchData();
 watch(page, fetchData);
 watch(search, fetchData);
 
+const initializePageFromURL = () => {
+  const url = new URL(window.location.toString());
+  const pageParam = url.searchParams.get('page');
+  if (pageParam) {
+    const pageNumber = parseInt(pageParam);
+    if (!isNaN(pageNumber)) {
+      page.value = pageNumber; 
+    }
+  }
+};
+
+onMounted(initializePageFromURL);
 </script>
