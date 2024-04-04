@@ -4,10 +4,9 @@
       <h1 class="text-2xl font-bold">Participantes</h1>
       <div class="px-3 w-72 py-1.5 border border-white  rounded-lg flex items-center gap-3">
         <Search class="size-4 text-emerald-300" />
-        <input @input="onSearchInputChanged" class="bg-transparent flex-1 outline-none border-0 p-0 text-sm"
+        <input v-model="search" @input="onSearchInputChanged" class="bg-transparent flex-1 outline-none border-0 p-0 text-sm"
           placeholder="Buscar participante..." />
       </div>
-      {{ search }}
     </div>
 
     <Table>
@@ -110,8 +109,12 @@ const total = ref(0);
 const attendees = ref<Attendee[]>([]);
 
 const fetchData = () => {
-  const url = new URL(`http://localhost:3333/events/9e9bd979-9d10-4915-b339-3786b1634f33/attendees?pageIndex=${page.value - 1}`);
-  url.searchParams.set('pageIndex', String(page.value - 1));
+  const url = new URL(`http://localhost:3333/events/9e9bd979-9d10-4915-b339-3786b1634f33/attendees`);
+  const params = new URLSearchParams({
+    pageIndex: String(page.value - 1),
+    query: search.value
+  });
+  url.search = params.toString();
  
   fetch(url)
     .then(response => response.json())
@@ -123,6 +126,7 @@ const fetchData = () => {
 
 const onSearchInputChanged = (event) => {
   search.value = event.target.value;
+  setCurrentPage(1); 
 };
 
 const setCurrentPage = (pageNumber: number) => {
@@ -132,8 +136,6 @@ const setCurrentPage = (pageNumber: number) => {
   page.value = pageNumber;
 };
 
-
-
 const goToFirstPage = () => setCurrentPage(1);
 const goToLastPage = () => setCurrentPage(Math.ceil(total.value / 10));
 const goToPreviousPage = () => setCurrentPage(page.value - 1);
@@ -142,5 +144,6 @@ const goToNextPage = () => setCurrentPage(page.value + 1);
 // Carregar dados na montagem do componente e sempre que a página mudar
 fetchData();
 watch(page, fetchData);
+watch(search, fetchData);
 
 </script>
