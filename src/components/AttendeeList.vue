@@ -51,12 +51,12 @@
       <tfoot>
         <tr>
           <TableCell colspan="3">
-            Mostrando 10 de {{ attendees.length }} itens
+            Mostrando {{ attendees.length }} de {{ total }} itens
           </TableCell>
           <TableCell class="text-right" colspan="3">
             <div class="inline-flex items-center gap-8">
               <span>
-                Página {{ page }} de {{ totalPages }}
+                Página {{ page }} de {{ total }}
               </span>
 
               <div class="flex gap-1.5">
@@ -66,7 +66,7 @@
                 <IconButton @click="goToPreviousPage" :disabled="page === 1">
                   <ChevronLeft class="size-4" />
                 </IconButton>
-                <IconButton @click="goToNextPage" :disabled="page === totalPages">
+                <IconButton @click="goToNextPage" :disabled="page === total">
                   <ChevronRight class="size-4" />
                 </IconButton>
                 <IconButton @click="goToLastPage" :disabled="page === totalPages">
@@ -82,20 +82,10 @@
 </template>
 
 <script setup lang="ts">
-interface Attendee {
-  id: string;
-  name: string;
-  email: string;
-  createdAt: string;
-  checkedInAt: string;
-}
-import { onMounted, watch } from 'vue';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 import relativeTime from 'dayjs/plugin/relativeTime';
-dayjs.extend(relativeTime);
-dayjs.locale('pt-br');
 import Table from './Table/Table.vue';
 import TableHeader from './Table/TableHeader.vue';
 import TableCell from './Table/TableCell.vue';
@@ -106,66 +96,51 @@ import IconButton from './IconButton.vue';
 dayjs.extend(relativeTime);
 dayjs.locale("pt-br");
 
+interface Attendee {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  checkedInAt: string | null;
+}
 
-const search = ref("");
+const search = ref('');
 const page = ref(1);
-const pageSize = 10;
+const total = ref(0);
 const attendees = ref<Attendee[]>([]);
-const paginatedAttendees = ref([]);
-const totalPages = ref(0);
+
+const fetchData = () => {
+  const url = new URL(`http://localhost:3333/events/9e9bd979-9d10-4915-b339-3786b1634f33/attendees?pageIndex=${page.value - 1}`);
+  url.searchParams.set('pageIndex', String(page.value - 1));
+ 
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      attendees.value = data.attendees;
+      total.value = data.total;
+    });
+};
 
 const onSearchInputChanged = (event) => {
   search.value = event.target.value;
 };
 
-const updatePaginatedAttendees = () => {
-  const startIndex = (page.value - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, attendees.value.length);
-  paginatedAttendees.value = attendees.value.slice(startIndex, endIndex);
+const setCurrentPage = (pageNumber: number) => {
+  const url = new URL(window.location.toString());
+  url.searchParams.set('page', String(pageNumber));
+  window.history.pushState({}, '', url);
+  page.value = pageNumber;
 };
 
-const goToFirstPage = () => {
-  if (page.value !== 1) {
-    page.value = 1;
-  }
-};
 
-const goToLastPage = () => {
-  if (page.value !== totalPages.value) {
-    page.value = totalPages.value;
-  }
-};
 
-const goToPreviousPage = () => {
-  if (page.value > 1) {
-    page.value -= 1;
-  }
-};
+const goToFirstPage = () => setCurrentPage(1);
+const goToLastPage = () => setCurrentPage(Math.ceil(total.value / 10));
+const goToPreviousPage = () => setCurrentPage(page.value - 1);
+const goToNextPage = () => setCurrentPage(page.value + 1);
 
-const goToNextPage = () => {
-  if (page.value < totalPages.value) {
-    page.value += 1;
-  }
-};
-
-const fetchData = async () => {
-  try {
-    const response = await fetch('http://localhost:3333/events/9e9bd979-9d10-4915-b339-3786b1634f33/attendees');
-    const data: { attendees: Attendee[] } = await response.json();
-    attendees.value = data.attendees;
-    totalPages.value = Math.ceil(attendees.value.length / pageSize);
-    updatePaginatedAttendees();
-  } catch (error) {
-    console.error('Erro ao buscar dados:', error);
-  }
-};
-
-watch(page, () => {
-  updatePaginatedAttendees();
-});
-
-onMounted(() => {
-  fetchData();
-});
+// Carregar dados na montagem do componente e sempre que a página mudar
+fetchData();
+watch(page, fetchData);
 
 </script>
