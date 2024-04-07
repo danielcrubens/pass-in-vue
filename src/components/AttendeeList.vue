@@ -107,9 +107,11 @@ const search = ref('');
 const page = ref(1);
 const total = ref(0);
 const attendees = ref<Attendee[]>([]);
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 const fetchData = () => {
-  const url = new URL(`http://localhost:3333/events/9e9bd979-9d10-4915-b339-3786b1634f33/attendees`);
+  const url = new URL(`${BASE_URL}/events/4d581edb-3f8c-4224-9182-c4398cfea080/attendees`);
   const params = new URLSearchParams({
     pageIndex: String(page.value - 1),
     query: search.value
@@ -126,12 +128,29 @@ const fetchData = () => {
 
 const onSearchInputChanged = (event) => {
   search.value = event.target.value;
-  setCurrentPage(1); 
+  if (search.value.trim() === '') { // Verifica se o campo de pesquisa está vazio
+    removeSearchParameterFromURL();
+  } else {
+    setCurrentPage(1);
+  }
+};
+
+const removeSearchParameterFromURL = () => {
+  const url = new URL(window.location.toString());
+  url.searchParams.delete('search'); // Remove o parâmetro 'search' da URL
+  url.search = url.searchParams.toString();
+  window.history.pushState({}, '', url);
 };
 
 const setCurrentPage = (pageNumber: number) => {
   const url = new URL(window.location.toString());
   url.searchParams.set('page', String(pageNumber));
+  if (search.value.trim() !== '') { // Verifica se há uma pesquisa ativa
+    url.searchParams.set('search', search.value);
+  } else { // Remove o parâmetro 'search' se não houver pesquisa ativa
+    url.searchParams.delete('search');
+  }
+  url.search = url.searchParams.toString();
   window.history.pushState({}, '', url);
   page.value = pageNumber;
 };
