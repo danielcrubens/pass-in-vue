@@ -107,11 +107,11 @@ const search = ref('');
 const page = ref(1);
 const total = ref(0);
 const attendees = ref<Attendee[]>([]);
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+/* const BASE_URL = import.meta.env.VITE_API_BASE_URL; */
 
 
 const fetchData = () => {
-  const url = new URL(`${BASE_URL}/events/4d581edb-3f8c-4224-9182-c4398cfea080/attendees`);
+  const url = new URL('https://db-pass-in.onrender.com/events/4d581edb-3f8c-4224-9182-c4398cfea080/attendees');
   const params = new URLSearchParams({
     pageIndex: String(page.value - 1),
     query: search.value
